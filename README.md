@@ -23,7 +23,25 @@ uv run fastapi dev main.py --host 127.0.0.1 --port 8081
 
 在瀏覽器開啟 `http://127.0.0.1:8081`。若 8081 已被占用，可換成其他未使用的埠號。`/health` 可確認 HTTP 服務是否已啟動，`/docs` 可查看 API。
 
-第一次啟動會讀取 `student.sql`，自動建立資料表、Demo 帳號、投稿分類與三篇範例稿件。之後重啟不會重複建立範例資料。所有建表與初始化 SQL 都集中在這個檔案；`db.py` 負責讀取、替換密碼雜湊標記並執行。
+第一次啟動會讀取 `project.sql`，自動建立資料表、Demo 帳號、投稿分類與三篇範例稿件。之後重啟不會重複建立範例資料。所有建表與初始化 SQL 都集中在這個檔案；`db.py` 負責讀取、替換密碼雜湊標記並執行。
+
+## 用 Docker 執行
+
+先啟動 Docker Desktop，開啟 PowerShell 並切換到專案資料夾，再執行：
+
+```powershell
+docker compose up --build
+```
+
+第一次會下載 Python 與 PostgreSQL 映像並建置網站容器，完成後開啟 `http://127.0.0.1:8081`。Docker Compose 會一起啟動 PostgreSQL，不需要連接 Windows 上的 PostgreSQL 服務；網站容器透過 Docker 內部的 `db` 名稱連資料庫。資料庫使用 Docker named volume 保存，重新啟動容器後資料仍會保留。
+
+停止服務可在執行中的視窗按 `Ctrl+C`，再執行：
+
+```powershell
+docker compose down
+```
+
+`docker compose down` 會停止並移除容器，但保留資料庫 volume。若已在背景啟動，可用 `docker compose logs -f app` 查看網站啟動訊息。
 
 ## Demo 帳號
 
