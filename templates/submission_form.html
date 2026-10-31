@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}{{ '新增投稿' if not submission else '編輯稿件' }}{% endblock %}
+{% block body %}
+<main class="shell">
+  <div class="page-head">
+    <div><div class="eyebrow">作者工作台</div><h1>{{ '新增投稿' if not submission else '編輯稿件' }}</h1><p class="intro">稿件可先儲存為編輯中，準備好後再送交編輯審查。</p></div>
+    <a class="button secondary" href="/author/submissions">返回稿件清單</a>
+  </div>
+  {% if notice %}<div class="notice">{{ notice }}</div>{% endif %}
+  {% if error %}<div class="error">{{ error }}</div>{% endif %}
+  {% if submission and submission.revision_note %}<div class="error"><strong>編輯退回建議</strong><br>{{ submission.revision_note }}</div>{% endif %}
+  <section class="panel form-panel">
+    <form method="post" action="{% if submission %}/author/submissions/{{ submission.id }}/edit{% else %}/author/submissions/new{% endif %}">
+      <div class="field"><label for="title">稿件標題</label><input class="input" id="title" name="title" maxlength="200" required value="{{ submission.title if submission else '' }}" placeholder="請輸入清楚易懂的標題"></div>
+      <div class="field"><label for="category_id">投稿分類</label>
+        <select id="category_id" name="category_id" required>
+          <option value="">請選擇分類</option>
+          {% for category in categories %}<option value="{{ category.id }}" {{ 'selected' if submission and submission.category_id == category.id else '' }}>{{ category.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="field"><label for="content">文章內容</label><textarea id="content" name="content" required placeholder="在這裡撰寫文章內容…">{{ submission.content if submission else '' }}</textarea><div class="hint">送審後稿件會進入編輯工作台，審查期間不能修改或刪除。</div></div>
+      <div class="form-actions"><a class="button secondary" href="/author/submissions">取消</a>
+        <div class="action-group"><button class="button secondary" type="submit" name="action" value="save">儲存草稿</button><button class="button" type="submit" name="action" value="submit">送出審查 →</button></div>
+      </div>
+    </form>
+  </section>
+</main>
+{% endblock %}

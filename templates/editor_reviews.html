@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}審查工作台{% endblock %}
+{% block body %}
+<main class="shell">
+  <div class="page-head">
+    <div><div class="eyebrow">編輯工作台</div><h1>稿件審查</h1><p class="intro">查看作者送出的文章，閱讀內容後決定通過或退回修改。</p></div>
+  </div>
+  <section class="stats">
+    <div class="stat"><div class="stat-label">待審稿件</div><div class="stat-value">{{ counts.get("in_review", 0) }}</div></div>
+    <div class="stat"><div class="stat-label">已通過</div><div class="stat-value">{{ counts.get("approved", 0) }}</div></div>
+    <div class="stat"><div class="stat-label">退回修改</div><div class="stat-value">{{ counts.get("editing", 0) }}</div></div>
+  </section>
+  <section class="panel">
+    <div class="panel-head"><h2>{{ '待審稿件' if view == 'pending' else '已完成處理' }}</h2>
+      <div class="toolbar"><a class="button {{ 'small' if view == 'pending' else 'secondary small' }}" href="/editor/reviews?view=pending">待審</a><a class="button {{ 'small' if view == 'completed' else 'secondary small' }}" href="/editor/reviews?view=completed">已處理</a></div>
+    </div>
+    {% if submissions %}
+    <table><thead><tr><th>稿件</th><th>作者</th><th>分類</th><th>送審時間</th><th>狀態</th><th></th></tr></thead><tbody>
+      {% for item in submissions %}<tr>
+        <td><a class="title-link" href="/editor/reviews/{{ item.id }}">{{ item.title }}</a></td>
+        <td>{{ item.author_name }}</td><td>{{ item.category_name }}</td>
+        <td class="subtext">{{ item.submitted_at.strftime('%Y-%m-%d %H:%M') if item.submitted_at else '—' }}</td>
+        <td><span class="status {{ item.status }}">{{ status_label(item.status) }}</span></td>
+        <td><a class="button secondary small" href="/editor/reviews/{{ item.id }}">{{ '開始審查' if item.status == 'in_review' else '查看紀錄' }}</a></td>
+      </tr>{% endfor %}
+    </tbody></table>
+    {% else %}<div class="empty"><strong>{{ '目前沒有待審稿件' if view == 'pending' else '目前沒有已處理稿件' }}</strong>稿件送出或完成審查後會顯示在這裡。</div>{% endif %}
+  </section>
+</main>
+{% endblock %}

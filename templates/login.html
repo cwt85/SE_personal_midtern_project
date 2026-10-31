@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}登入{% endblock %}
+{% block body %}
+<main class="login-wrap">
+  <section class="login-card">
+    <div class="eyebrow">投稿審查 Demo</div>
+    <h1>登入稿件室</h1>
+    <p class="intro">登入後依照你的角色進入投稿或審查工作台。</p>
+    {% if error %}<div class="error" style="margin-top:18px">{{ error }}</div>{% endif %}
+    <form method="post" action="/login" style="margin-top:22px">
+      <div class="field"><label for="email">電子郵件</label><input class="input" id="email" name="email" type="email" autocomplete="username" required placeholder="name@example.com"></div>
+      <div class="field"><label for="password">密碼</label><input class="input" id="password" name="password" type="password" autocomplete="current-password" required placeholder="輸入密碼"></div>
+      <button class="button" type="submit" style="width:100%">登入</button>
+    </form>
+    <div class="demo-box">
+      <strong>Demo 帳號</strong>
+      <div>作者：author@demo.local ／ author1234</div>
+      <div>編輯：editor@demo.local ／ editor1234</div>
+    </div>
+  </section>
+</main>
+{% endblock %}

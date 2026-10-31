@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}稿件審查{% endblock %}
+{% block body %}
+<main class="shell">
+  <div class="page-head"><div><div class="eyebrow">編輯工作台 / 稿件內容</div><h1>審查稿件</h1><p class="intro">閱讀全文後通過稿件，或留下具體修改建議退回作者。</p></div><a class="button secondary" href="/editor/reviews">返回待審清單</a></div>
+  {% if notice %}<div class="notice">{{ notice }}</div>{% endif %}
+  <div class="detail-grid">
+    <article class="panel article">
+      <span class="status {{ submission.status }}">{{ status_label(submission.status) }}</span>
+      <h1>{{ submission.title }}</h1>
+      <div class="article-meta"><span>作者：{{ submission.author_name }}</span><span>分類：{{ submission.category_name }}</span><span>送審：{{ submission.submitted_at.strftime('%Y-%m-%d %H:%M') if submission.submitted_at else '尚未送審' }}</span></div>
+      <div class="article-content">{{ submission.content }}</div>
+    </article>
+    <aside>
+      <section class="panel side-panel">
+        <h3>審查決定</h3>
+        {% if submission.status == 'in_review' %}
+          <form method="post" action="/editor/reviews/{{ submission.id }}">
+            <div class="field"><label for="note">修改建議</label><textarea id="note" name="note" style="min-height:150px" placeholder="退回稿件時請具體說明需要修改的內容"></textarea><div class="hint">通過時可不填；退回時必須填寫。</div></div>
+            <div class="toolbar"><button class="button" type="submit" name="action" value="approve">✓ 通過稿件</button><button class="button danger" type="submit" name="action" value="return" onclick="if(!document.getElementById('note').value.trim()){alert('退回稿件時請先填寫修改建議。');return false;}return confirm('確定退回給作者修改？')">退回修改</button></div>
+          </form>
+        {% elif submission.status == 'approved' %}<p class="intro">這篇稿件已通過審查。</p>
+        {% else %}<p class="intro">這篇稿件已退回作者，目前正在編輯中。</p>{% endif %}
+      </section>
+      <section class="panel side-panel">
+        <h3>審查歷程</h3>
+        {% if history %}<ul class="review-history">{% for record in history %}<li><strong>{{ '已通過' if record.action == 'approved' else '退回修改' }}</strong><div class="subtext">{{ record.editor_name }}・{{ record.created_at.strftime('%Y-%m-%d %H:%M') }}</div>{% if record.note %}<div class="review-note">{{ record.note }}</div>{% endif %}</li>{% endfor %}</ul>
+        {% else %}<p class="subtext">尚無審查紀錄。</p>{% endif %}
+      </section>
+    </aside>
+  </div>
+</main>
+{% endblock %}

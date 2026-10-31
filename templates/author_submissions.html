@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}我的稿件{% endblock %}
+{% block body %}
+<main class="shell">
+  <div class="page-head">
+    <div><div class="eyebrow">作者工作台</div><h1>我的稿件</h1><p class="intro">管理草稿、追蹤審查進度，也能查看編輯的修改建議。</p></div>
+    <a class="button" href="/author/submissions/new">＋ 新增投稿</a>
+  </div>
+  <section class="stats">
+    <div class="stat"><div class="stat-label">編輯中</div><div class="stat-value">{{ counts.get("editing", 0) }}</div></div>
+    <div class="stat"><div class="stat-label">審查中</div><div class="stat-value">{{ counts.get("in_review", 0) }}</div></div>
+    <div class="stat"><div class="stat-label">已通過</div><div class="stat-value">{{ counts.get("approved", 0) }}</div></div>
+  </section>
+  {% if notice %}<div class="notice">{{ notice }}</div>{% endif %}
+  <section class="panel">
+    <div class="panel-head">
+      <h2>稿件清單</h2>
+      <form class="toolbar" method="get" action="/author/submissions">
+        <input class="input" name="q" value="{{ q }}" placeholder="搜尋標題">
+        <select name="status" aria-label="依狀態篩選">
+          <option value="all" {{ 'selected' if status == 'all' else '' }}>全部狀態</option>
+          <option value="editing" {{ 'selected' if status == 'editing' else '' }}>編輯中</option>
+          <option value="in_review" {{ 'selected' if status == 'in_review' else '' }}>審查中</option>
+          <option value="approved" {{ 'selected' if status == 'approved' else '' }}>已通過</option>
+        </select>
+        <button class="button secondary small" type="submit">篩選</button>
+      </form>
+    </div>
+    {% if submissions %}
+    <table>
+      <thead><tr><th>稿件</th><th>分類</th><th>狀態</th><th>最後更新</th><th>操作</th></tr></thead>
+      <tbody>
+      {% for item in submissions %}
+        <tr>
+          <td><a class="title-link" href="{% if item.status == 'editing' %}/author/submissions/{{ item.id }}/edit{% else %}#{% endif %}">{{ item.title }}</a>{% if item.revision_note %}<div class="subtext">修改建議：{{ item.revision_note }}</div>{% endif %}</td>
+          <td>{{ item.category_name }}</td>
+          <td><span class="status {{ item.status }}">{{ status_label(item.status) }}</span></td>
+          <td class="subtext">{{ item.updated_at.strftime('%Y-%m-%d %H:%M') }}</td>
+          <td>
+            {% if item.status == 'editing' %}
+            <div class="toolbar"><a class="button secondary small" href="/author/submissions/{{ item.id }}/edit">編輯</a>
+              <form method="post" action="/author/submissions/{{ item.id }}/delete" onsubmit="return confirm('確定刪除這篇稿件？')"><button class="button danger small" type="submit">刪除</button></form>
+            </div>
+            {% else %}<span class="subtext">—</span>{% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty"><strong>目前沒有符合條件的稿件</strong>新增一篇稿件，開始投稿流程。</div>
+    {% endif %}
+  </section>
+</main>
+{% endblock %}
