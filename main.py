@@ -7,19 +7,28 @@ from fastapi import Depends, FastAPI, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
-from auth import create_session_token, read_session_token, verify_password
+from auth import SESSION_TTL_SECONDS, create_session_token, read_session_token, verify_password
 from db import get_db, lifespan
 
 
 BASE_DIR = Path(__file__).resolve().parent
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 app = FastAPI(title="投稿審查系統", description="作者投稿、編輯審查與稿件狀態追蹤 Demo", lifespan=lifespan)
+SESSION_COOKIES = {"author": "submission_author_session", "editor": "submission_editor_session"}
+WORKSPACES = {"author": "/author/submissions", "editor": "/editor/reviews"}
+
+
+def read_role_session(request: Request, role: str) -> dict | None:
+    """Cookie 名稱只用來選擇身分；實際角色仍須通過簽章驗證。"""
+    user = read_session_token(request.cookies.get(SESSION_COOKIES[role]))
+    return user if user and user["role"] == role else None
 
 
 @app.middleware("http")
 async def load_current_user(request: Request, call_next):
-    """從簽章 Cookie 還原使用者身分，讓各頁面依角色限制操作。"""
-    request.state.user = read_session_token(request.cookies.get("submission_session"))
+    """依工作區選擇 Cookie，避免同一瀏覽器的作者與編輯互相覆蓋。"""
+    role = request.url.path.split("/")[1]
+    request.state.user = read_role_session(request, role) if role in SESSION_COOKIES else None
     return await call_next(request)
 
 
@@ -36,6 +45,11 @@ def require_role(request: Request, expected_role: str) -> dict:
 def render(request: Request, page: str, context: dict | None = None, status_code: int = 200):
     """統一將登入者資訊放進畫面，避免每個路由重複處理。"""
     page_context = {"user": request.state.user, **(context or {})}
+    if page == "login.html":
+        # 登入頁可返回既有工作區，也能在不登出的情況下登入另一角色。
+        page_context["active_sessions"] = {
+            role: user for role in SESSION_COOKIES if (user := read_role_session(request, role))
+        }
     response = templates.TemplateResponse(
         name=page,
         request=request,
@@ -55,19 +69,15 @@ def status_label(status: str) -> str:
 
 @app.get("/", include_in_schema=False)
 async def home(request: Request):
-    """依登入角色前往作者稿件列表或編輯待審列表。"""
-    user = request.state.user
-    if user is None:
-        return RedirectResponse(url="/login", status_code=303)
-    destination = "/author/submissions" if user["role"] == "author" else "/editor/reviews"
+    """只有一個角色登入時直接進入；兩者皆登入時提供工作區選擇。"""
+    roles = [role for role in SESSION_COOKIES if read_role_session(request, role)]
+    destination = WORKSPACES[roles[0]] if len(roles) == 1 else "/login"
     return RedirectResponse(url=destination, status_code=303)
 
 
 @app.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request):
-    """顯示登入頁，已登入者直接前往自己的工作區。"""
-    if request.state.user:
-        return await home(request)
+    """保留登入入口，允許另一個分頁登入不同角色。"""
     return render(request, "login.html", {"error": None})
 
 
@@ -87,23 +97,28 @@ async def login(
     if user is None or not verify_password(password, user["password_hash"]):
         return render(request, "login.html", {"error": "帳號或密碼不正確。"}, status_code=401)
 
-    response = RedirectResponse(url="/", status_code=303)
+    # 登入後直接進入該角色的工作區，不讓另一角色的 Cookie 決定目的地。
+    response = RedirectResponse(url=WORKSPACES[user["role"]], status_code=303)
     response.set_cookie(
-        "submission_session",
+        SESSION_COOKIES[user["role"]],
         create_session_token(user["id"], user["role"], user["display_name"]),
-        max_age=60 * 60 * 8,
+        max_age=SESSION_TTL_SECONDS,
         httponly=True,
         samesite="lax",
         secure=False,  # 本機 HTTP Demo 使用；正式 HTTPS 站台應改成 True。
     )
+    # 舊版共用 Cookie 不再參與驗證，登入成功時順便移除。
+    response.delete_cookie("submission_session")
     return response
 
 
 @app.post("/logout")
-async def logout():
-    """清除登入 Cookie，回到登入畫面。"""
+async def logout(role: str = Form(...)):
+    """僅登出表單所屬角色，保留另一個工作區的登入狀態。"""
+    if role not in SESSION_COOKIES:
+        raise HTTPException(status_code=400, detail="無效的登出角色")
     response = RedirectResponse(url="/login", status_code=303)
-    response.delete_cookie("submission_session")
+    response.delete_cookie(SESSION_COOKIES[role])
     return response
 
 

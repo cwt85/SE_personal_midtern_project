@@ -6,6 +6,15 @@
     <div class="eyebrow">投稿審查 Demo</div>
     <h1>登入稿件室</h1>
     <p class="intro">登入後依照你的角色進入投稿或審查工作台。</p>
+    <p class="hint">作者與編輯可在同一瀏覽器的不同分頁同時登入，登出只影響該角色。</p>
+    {% if active_sessions %}
+    <div class="demo-box">
+      <strong>已登入的工作區</strong>
+      {% for role, account in active_sessions.items() %}
+      <div><a class="button secondary small" href="{{ '/author/submissions' if role == 'author' else '/editor/reviews' }}">{{ account.display_name }}・{{ '作者' if role == 'author' else '編輯' }}</a></div>
+      {% endfor %}
+    </div>
+    {% endif %}
     {% if error %}<div class="error" style="margin-top:18px">{{ error }}</div>{% endif %}
     <form method="post" action="/login" style="margin-top:22px">
       <div class="field"><label for="email">電子郵件</label><input class="input" id="email" name="email" type="email" autocomplete="username" required placeholder="name@example.com"></div>

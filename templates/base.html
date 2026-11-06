@@ -86,12 +86,13 @@
 </head>
 <body>
   <header class="topbar">
-    <a class="brand" href="/" aria-label="稿件室首頁"><span class="brand-mark">稿</span><span>稿件室 <span class="subtext">投稿審查</span></span></a>
+    <a class="brand" href="{{ ('/author/submissions' if user.role == 'author' else '/editor/reviews') if user else '/' }}" aria-label="稿件室首頁"><span class="brand-mark">稿</span><span>稿件室 <span class="subtext">投稿審查</span></span></a>
     {% if user %}
     <div class="top-actions">
       <span class="identity">{{ user.display_name }}・{{ "作者" if user.role == "author" else "編輯" }}</span>
       {% if user.role == "author" %}<a href="/author/submissions">我的稿件</a>{% else %}<a href="/editor/reviews">審查工作台</a>{% endif %}
-      <form method="post" action="/logout"><button class="logout" type="submit">登出</button></form>
+      <a href="/login" target="_blank" rel="noopener">登入其他角色</a>
+      <form method="post" action="/logout"><input type="hidden" name="role" value="{{ user.role }}"><button class="logout" type="submit">登出</button></form>
     </div>
     {% endif %}
   </header>
