@@ -49,7 +49,13 @@ async def lifespan(app: FastAPI):
 
     pool = AsyncConnectionPool(
         conninfo=database_url,
-        kwargs={"row_factory": dict_row},
+        kwargs={
+            "row_factory": dict_row,
+            # 每條連線的工作階段時區固定為 UTC+8（台灣時間）。
+            # TIMESTAMPTZ 在資料庫內一律以 UTC 儲存，讀出時會依此時區換算，
+            # 因此不論 PostgreSQL 主機（例如 Docker 容器預設 UTC）設定為何，畫面都顯示台灣時間。
+            "options": "-c timezone=Asia/Taipei",
+        },
         open=False,
     )
     await pool.open()
